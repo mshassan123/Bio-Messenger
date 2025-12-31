@@ -1,0 +1,225 @@
+# BioMessenger v7.1
+# Text ↔ DNA ↔ Protein ↔ Embedded PDB ↔ 3D Cartoon ↔ Message
+# Designed by Muhammad Sohaib Hassan
+
+!pip -q install py3Dmol ipywidgets
+
+import math, base64, hashlib
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import py3Dmol
+
+# DNA ENCODING CORE
+
+BINARY_TO_DNA = {"00":"A","01":"C","10":"G","11":"T"}
+DNA_TO_BINARY = {v:k for k,v in BINARY_TO_DNA.items()}
+
+def text_to_dna(text):
+    binary = ''.join(format(ord(c),'08b') for c in text)
+    return ''.join(BINARY_TO_DNA[binary[i:i+2]] for i in range(0,len(binary),2))
+
+def dna_to_text(dna):
+    binary = ''.join(DNA_TO_BINARY[b] for b in dna if b in DNA_TO_BINARY)
+    binary = binary[:(len(binary)//8)*8]
+    return ''.join(chr(int(binary[i:i+8],2)) for i in range(0,len(binary),8))
+
+def fasta(name, seq):
+    return f">{name}\n{seq}"
+
+# DNA → PROTEIN
+
+CODON_TABLE = {
+ "TTT":"F","TTC":"F","TTA":"L","TTG":"L",
+ "CTT":"L","CTC":"L","CTA":"L","CTG":"L",
+ "ATT":"I","ATC":"I","ATA":"I","ATG":"M",
+ "GTT":"V","GTC":"V","GTA":"V","GTG":"V",
+ "TCT":"S","TCC":"S","TCA":"S","TCG":"S",
+ "CCT":"P","CCC":"P","CCA":"P","CCG":"P",
+ "ACT":"T","ACC":"T","ACA":"T","ACG":"T",
+ "GCT":"A","GCC":"A","GCA":"A","GCG":"A",
+ "TAT":"Y","TAC":"Y","CAT":"H","CAC":"H",
+ "CAA":"Q","CAG":"Q","AAT":"N","AAC":"N",
+ "AAA":"K","AAG":"K","GAT":"D","GAC":"D",
+ "GAA":"E","GAG":"E","TGT":"C","TGC":"C",
+ "TGG":"W","CGT":"R","CGC":"R","CGA":"R",
+ "CGG":"R","AGT":"S","AGC":"S","AGA":"R",
+ "AGG":"R","GGT":"G","GGC":"G","GGA":"G",
+ "GGG":"G"
+}
+
+def dna_to_protein(dna):
+    return ''.join(
+        CODON_TABLE.get(dna[i:i+3],'')
+        for i in range(0,len(dna)-2,3)
+    )
+
+# SYNTHETIC PDB GENERATOR
+
+AA3 = {
+ "A":"ALA","C":"CYS","D":"ASP","E":"GLU","F":"PHE",
+ "G":"GLY","H":"HIS","I":"ILE","K":"LYS","L":"LEU",
+ "M":"MET","N":"ASN","P":"PRO","Q":"GLN","R":"ARG",
+ "S":"SER","T":"THR","V":"VAL","W":"TRP","Y":"TYR"
+}
+
+def generate_pdb(protein, dna):
+    payload = base64.b64encode(dna.encode()).decode()
+    checksum = hashlib.sha256(dna.encode()).hexdigest()
+
+    pdb = [
+        "REMARK 900 BIOMESSENGER v7.1",
+        f"REMARK 901 PAYLOAD {payload}",
+        f"REMARK 902 CHECKSUM {checksum}",
+        ""
+    ]
+
+    pdb.append(
+        f"SEQRES   1 A {len(protein)}  " +
+        " ".join(AA3[a] for a in protein)
+    )
+
+    atom_id = 1
+    for i, aa in enumerate(protein, start=1):
+        res = AA3[aa]
+        x = i * 1.5
+        y = math.sin(i*0.45)*6
+        z = math.cos(i*0.45)*6
+
+        for atom, dx in [("N",-0.5),("CA",0.0),("C",0.5)]:
+            pdb.append(
+                f"ATOM  {atom_id:5d}  {atom:<2}  {res} A{i:4d}    "
+                f"{x+dx:8.3f}{y:8.3f}{z:8.3f}  1.00 20.00           C"
+            )
+            atom_id += 1
+
+    pdb.append("END")
+    return "\n".join(pdb)
+
+def decode_pdb(pdb_text):
+    for line in pdb_text.splitlines():
+        if line.startswith("REMARK 901 PAYLOAD"):
+            dna = base64.b64decode(line.split()[-1]).decode()
+            return dna_to_text(dna)
+    return "❌ No embedded message found."
+
+# UI HEADER
+
+display(HTML("""
+<h2 style="text-align:center;">🧬 BioMessenger v7.1</h2>
+<p style="text-align:center;">
+Text ↔ DNA ↔ Protein ↔ Embedded PDB ↔ 3D Cartoon ↔ Message<br>
+<b>Designed by Muhammad Sohaib Hassan</b>
+</p><hr>
+"""))
+
+# MESSAGE ↔ DNA
+
+text_box = widgets.Textarea(layout=widgets.Layout(width="100%",height="90px"))
+dna_box  = widgets.Textarea(layout=widgets.Layout(width="100%",height="90px"))
+
+btn_t2d = widgets.Button(description="Text → DNA",button_style="success")
+btn_d2t = widgets.Button(description="DNA → Text",button_style="info")
+
+btn_t2d.on_click(lambda b: dna_box.__setattr__("value", text_to_dna(text_box.value)))
+btn_d2t.on_click(lambda b: text_box.__setattr__("value", dna_to_text(dna_box.value)))
+
+display(text_box, dna_box, widgets.HBox([btn_t2d, btn_d2t]))
+
+# PROTEIN
+
+protein_box = widgets.Textarea(layout=widgets.Layout(width="100%",height="90px"))
+decoded_box = widgets.Textarea(layout=widgets.Layout(width="100%",height="70px"))
+
+btn_prot = widgets.Button(description="Convert to Protein",button_style="warning")
+btn_decode = widgets.Button(description="Decode Message")
+
+btn_prot.on_click(lambda b: protein_box.__setattr__(
+    "value", fasta("Protein_Message", dna_to_protein(dna_box.value))
+))
+btn_decode.on_click(lambda b: decoded_box.__setattr__(
+    "value", dna_to_text(dna_box.value)
+))
+
+display(btn_prot, protein_box, btn_decode, decoded_box)
+
+# PDB GENERATION + DOWNLOAD + REDIRECTS
+
+pdb_box = widgets.Textarea(layout=widgets.Layout(width="100%",height="160px"))
+btn_pdb = widgets.Button(description="Generate Embedded PDB",button_style="danger")
+download_html = widgets.HTML()
+
+def make_pdb(b):
+    protein = protein_box.value.splitlines()[-1]
+    pdb = generate_pdb(protein, dna_box.value)
+    pdb_box.value = pdb
+    b64 = base64.b64encode(pdb.encode()).decode()
+
+    download_html.value = f"""
+    <a download="BioMessenger_v7.1.pdb"
+       href="data:text/plain;base64,{b64}"
+       style="padding:10px 15px;background:#c0392b;
+              color:white;text-decoration:none;border-radius:6px;">
+       ⬇ Download PDB
+    </a>
+
+    <hr>
+    <h4>Turn your message into 3D structure manually</h4>
+
+    <a href="https://alphafold.ebi.ac.uk/"
+       target="_blank"
+       style="padding:8px 14px;margin-right:10px;
+              background:#2c3e50;color:white;
+              text-decoration:none;border-radius:6px;">
+       AlphaFold Server
+    </a>
+
+    <a href="https://esmatlas.com/resources?action=fold"
+       target="_blank"
+       style="padding:8px 14px;
+              background:#16a085;color:white;
+              text-decoration:none;border-radius:6px;">
+       ESMFold Server
+    </a>
+    """
+
+btn_pdb.on_click(make_pdb)
+display(btn_pdb, pdb_box, download_html)
+
+# PDB VIEWER + REDIRECT
+
+display(HTML("<hr><h3>🧩 Upload & View PDB</h3>"))
+
+upload = widgets.FileUpload(accept=".pdb",multiple=False)
+viewer = widgets.Output()
+decoded_from_pdb = widgets.Textarea(layout=widgets.Layout(width="100%",height="100px"))
+
+display(upload)
+
+display(HTML("""
+<a href="https://sciencecodons.com/tools/pdb-file-viewer/"
+   target="_blank"
+   style="display:inline-block;
+          margin:10px 0;
+          padding:8px 14px;
+          background:#2980b9;
+          color:white;
+          text-decoration:none;
+          border-radius:6px;">
+🔗 View PDB in External 3D Viewer
+</a>
+"""))
+
+def on_upload(change):
+    pdb = list(upload.value.values())[0]["content"].decode()
+    viewer.clear_output()
+    with viewer:
+        v = py3Dmol.view(width=650,height=450)
+        v.addModel(pdb,"pdb")
+        v.setStyle({"cartoon":{"color":"spectrum"}})
+        v.zoomTo()
+        v.show()
+
+    decoded_from_pdb.value = decode_pdb(pdb)
+
+upload.observe(on_upload,names="value")
+display(viewer, decoded_from_pdb)
