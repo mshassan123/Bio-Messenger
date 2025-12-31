@@ -45,7 +45,6 @@ Copy code
 
 ![3D Protein Cartoon](https://via.placeholder.com/500x300.png?text=3D+Protein+Cartoon+Animation)
 
-**Animation:** The protein backbone is represented as dynamic cartoon ribbons. You can rotate, zoom, and explore interactively.
 
 ---
 
