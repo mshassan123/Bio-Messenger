@@ -1,4 +1,4 @@
-# 🧬 BioMessenger v7.2
+# 🧬 BioMessenger
 
 **Transform your messages into living molecules.**
 **Text ↔ DNA ↔ Protein ↔ Embedded PDB ↔ Message**  
