@@ -1,5 +1,6 @@
-# 🧬 BioMessenger
+# 🧬 BioMessenger v7.2
 
+**Transform your messages into living molecules.**
 **Text ↔ DNA ↔ Protein ↔ Embedded PDB ↔ Message**  
 Designed by Muhammad Sohaib Hassan  
 
@@ -7,52 +8,67 @@ Designed by Muhammad Sohaib Hassan
 
 ## Overview
 
-BioMessenger v7 is a cutting-edge computational biology platform that transforms ordinary text messages into biologically inspired molecules, including DNA sequences, proteins, and interactive 3D structures. This tool bridges computational science and molecular visualization, enabling users to explore their messages as if they were living biomolecules.
+BioMessenger is an advanced computational biology platform that converts ordinary text into DNA sequences, proteins, and synthetic 3D structures. Each message is encoded, translated, and visualized in a biologically inspired way, allowing for interactive molecular exploration and digital art.
 
-Key Features:
+**Core Pipeline:**
+1. **Text → DNA**: Binary encoding of text into nucleotide sequences.
+2. **DNA → Protein**: Translation via the universal codon table.
+3. **Protein → 3D Structure**: Synthetic 3D backbone coordinates.
+4. **Embedded Messages**: Each PDB contains base64-encoded DNA and a checksum for integrity.
 
-- Converts any text message into a DNA sequence using a custom binary encoding system.
-- Translates DNA into a protein sequence via the universal codon table.
-- Generates a synthetic 3D protein structure in PDB format.
-- Embeds the original message and checksum into the PDB for secure and retrievable data.
-- Interactive 3D visualization of proteins using Py3Dmol.
-- Supports manual exploration on AlphaFold and ESMFold servers.
-- Beautiful animations and cartoon-style molecular views.
+**Built With:**
+- Python 3.x
+- ipywidgets
+- py3Dmol
+- Base64 & hashlib for message embedding
+- Inspired by Microsoft and Harvard computational biology approaches
 
 ---
 
-## How it Works
+## Example Workflow
 
-1. **Text → DNA**  
-   Each character is encoded into a unique nucleotide pattern, preserving the message in a biologically interpretable format.  
+**Input Message:** `Happy New Year`
 
-2. **DNA → Protein**  
-   DNA sequences are translated to amino acids using standard codons.  
+### Step 1: Text → DNA
+CAGGTTCCGGAACCTTAA...
 
-3. **Protein → 3D Structure**  
-   Backbone coordinates are generated for interactive visualization.  
+shell
+Copy code
 
-### Example: “Happy New Year”
+### Step 2: DNA → Protein
+GLN-VAL-PRO-GLU-THR-LEU...
 
-```python
-import py3Dmol
+yaml
+Copy code
 
-# Example protein sequence from the message
-protein_seq = "GLN THR THR LEU THR ALA GLU ARG ALA PRO SER ARG THR ALA ALA ARG PRO SER TYR"
+### Step 3: 3D Structure Visualization
 
-# Generate a PDB with basic coordinates
-pdb_content = ""
-x, y, z = 0.0, 0.0, 0.0
-for i, aa in enumerate(protein_seq.split(), start=1):
-    pdb_content += f"ATOM  {i:5d}  CA  {aa} A{i:4d}    {x:.3f}{y:.3f}{z:.3f}  1.00 20.00           C\n"
-    x += 1.5
-    y += 0.5
-    z += 0.5
-pdb_content += "END"
+![3D Protein Cartoon](https://via.placeholder.com/500x300.png?text=3D+Protein+Cartoon+Animation)
 
-# Visualize interactively
-view = py3Dmol.view(width=600, height=400)
-view.addModel(pdb_content, "pdb")
-view.setStyle({"cartoon": {"color": "spectrum"}})
-view.zoomTo()
-view.show()
+**Animation:** The protein backbone is represented as dynamic cartoon ribbons. You can rotate, zoom, and explore interactively.
+
+---
+
+## Features
+
+- **Text-to-DNA-to-Protein-to-PDB pipeline**
+- **Embedded messages** with checksum verification
+- **Interactive 3D visualizations** with py3Dmol
+- **Manual folding options**: AlphaFold & ESMFold
+- **Beautiful animations** generated from code
+- **Educational & research-friendly**
+
+---
+
+## Try It Yourself
+
+- [View PDB Online](https://sciencecodons.com/tools/pdb-file-viewer/)
+- [AlphaFold Server](https://alphafold.ebi.ac.uk/)
+- [ESMFold Server](https://esmatlas.com/resources?action=fold)
+
+---
+
+## Dependencies
+
+```bash
+pip install py3Dmol ipywidgets
